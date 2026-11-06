@@ -1,0 +1,18 @@
+# ---- .NET 构建产物（Rider 构建时重建，不入库；替身 WPFLauncher.exe 也在 bin 下自动生成）----
+[Bb]in/
+[Oo]bj/
+
+# ---- IDE ----
+.idea/
+.vs/
+*.user
+
+# ---- 运行时在 exe 同目录生成的文件（正常落在 bin/ 下，这里再兜底）----
+shadow.json
+accounts.json
+cookie.txt
+logs/
+cache/
+
+# ---- CMake / 原生构建产物 ----
+native/build/

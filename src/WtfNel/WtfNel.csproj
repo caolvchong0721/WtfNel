@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>WtfNel</RootNamespace>
+    <AssemblyName>WtfNel</AssemblyName>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WtfNel.Core\WtfNel.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    
+    <None Include="..\WtfNel.Core\Assets\LocalRuntime\**\*" Link="LocalRuntime\%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+  
+  <Target Name="BuildStub" BeforeTargets="Build;Publish">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\WtfNel.Stub\WtfNel.Stub.csproj"
+             Targets="Build" Properties="Configuration=$(Configuration)" />
+  </Target>
+
+  <Target Name="CopyStubToOutput" AfterTargets="Build">
+    <ItemGroup>
+      <_StubOut Include="$(MSBuildThisFileDirectory)..\WtfNel.Stub\bin\$(Configuration)\$(TargetFramework)\WPFLauncher.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_StubOut)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="CopyStubToPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_StubPub Include="$(MSBuildThisFileDirectory)..\WtfNel.Stub\bin\$(Configuration)\$(TargetFramework)\WPFLauncher.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_StubPub)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+  
+  <PropertyGroup>
+    <NativePayloadDir>$(MSBuildThisFileDirectory)..\..\native\build</NativePayloadDir>
+  </PropertyGroup>
+
+  <Target Name="BuildNativePayloads" BeforeTargets="Build" Condition="'$(SkipNativePayload)' != 'true'">
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)..\..\native\build.ps1&quot; -Configuration $(Configuration)"
+          ContinueOnError="true" />
+  </Target>
+
+  <Target Name="CopyPayloadsToOutput" AfterTargets="Build">
+    <ItemGroup>
+      <_PayloadNative Include="$(NativePayloadDir)\WtfNel.Payload.HwidSpoof.dll" />
+      <_PayloadNative Include="$(NativePayloadDir)\WtfNel.Payload.Proxy.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_PayloadNative)" DestinationFolder="$(OutDir)payloads" SkipUnchangedFiles="true" ContinueOnError="true" />
+  </Target>
+
+  <Target Name="CopyPayloadsToPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_PayloadNativePublish Include="$(NativePayloadDir)\WtfNel.Payload.HwidSpoof.dll" />
+      <_PayloadNativePublish Include="$(NativePayloadDir)\WtfNel.Payload.Proxy.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_PayloadNativePublish)" DestinationFolder="$(PublishDir)payloads" SkipUnchangedFiles="true" ContinueOnError="true" />
+  </Target>
+
+</Project>

@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WtfNel.Core/WtfNel.Core.csproj" />
+    <Project Path="src/WtfNel.Stub/WtfNel.Stub.csproj" />
+    <Project Path="src/WtfNel/WtfNel.csproj" />
+  </Folder>
+</Solution>
