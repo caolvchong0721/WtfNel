@@ -9,7 +9,7 @@ public sealed class SavedAccount
     /// <summary>User-chosen display name.</summary>
     public string Name { get; set; } = "";
 
-    /// <summary>netease = NetEase email + password; cookie = sauth_json.</summary>
+    /// <summary>netease = NetEase email + password; 4399pc / 4399com = 4399 username + password (stored in Email); cookie = sauth_json.</summary>
     public string Channel { get; set; } = "netease";
 
     public string Email { get; set; } = "";
@@ -25,7 +25,7 @@ public sealed class SavedAccount
     public string LastRole { get; set; } = "";
 
     [JsonIgnore] public string Secret => Channel == "cookie" ? Cookie : Password;
-    [JsonIgnore] public string ChannelLabel => Channel == "cookie" ? "Cookie" : "网易邮箱";
+    [JsonIgnore] public string ChannelLabel => Channel switch { "cookie" => "Cookie", "4399pc" => "4399", "4399com" => "4399com", _ => "网易邮箱" };
 }
 
 /// <summary>accounts.json next to the exe: the account list, most recently used first.</summary>

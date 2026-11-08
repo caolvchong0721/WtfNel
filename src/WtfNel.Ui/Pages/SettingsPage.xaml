@@ -1,0 +1,143 @@
+<UserControl x:Class="WtfNel.Ui.Pages.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:WtfNel.Ui.Controls">
+    <UserControl.Resources>
+        <Style x:Key="RowIcon" TargetType="c:SvgIcon" BasedOn="{StaticResource {x:Type c:SvgIcon}}">
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Margin" Value="0,0,16,0"/>
+            <Setter Property="DockPanel.Dock" Value="Left"/>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="40,8,40,32">
+        <StackPanel MaxWidth="1000">
+            <TextBlock Text="设置" Style="{StaticResource H1}"/>
+
+            <TextBlock Text="外观" Style="{StaticResource Section}" Margin="1,0,0,8"/>
+            <Border Style="{StaticResource RowCard}">
+                <DockPanel>
+                    <c:SvgIcon Data="{StaticResource I.Palette}" Style="{StaticResource RowIcon}"/>
+                    <Border Style="{StaticResource SegmentHost}" DockPanel.Dock="Right" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton x:Name="ThemeLight" GroupName="SettingsTheme" Style="{StaticResource Segment}" Tag="Light" Checked="OnTheme" Content="浅色"/>
+                            <RadioButton x:Name="ThemeDark" GroupName="SettingsTheme" Style="{StaticResource Segment}" Tag="Dark" Checked="OnTheme" Content="深色"/>
+                            <RadioButton x:Name="ThemeSystem" GroupName="SettingsTheme" Style="{StaticResource Segment}" Tag="System" Checked="OnTheme" Content="跟随系统"/>
+                        </StackPanel>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="主题" Style="{StaticResource Body}"/>
+                        <TextBlock Text="选择应用的颜色模式" Style="{StaticResource Muted}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <TextBlock Text="游戏" Style="{StaticResource Section}"/>
+            <Border Style="{StaticResource RowCard}">
+                <DockPanel>
+                    <c:SvgIcon Data="{StaticResource I.Folder}" Style="{StaticResource RowIcon}"/>
+                    <Button DockPanel.Dock="Right" Click="OnBrowse" Margin="8,0,0,0" VerticalAlignment="Center" MinWidth="72">浏览</Button>
+                    <TextBox x:Name="GameDirBox" DockPanel.Dock="Right" Width="300" Tag="留空自动探测" LostFocus="OnGameDir" VerticalAlignment="Center"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="游戏目录" Style="{StaticResource Body}"/>
+                        <TextBlock Text=".minecraft 所在位置" Style="{StaticResource Muted}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+            <Border Style="{StaticResource RowCard}">
+                <DockPanel>
+                    <c:SvgIcon Data="{StaticResource I.Server}" Style="{StaticResource RowIcon}"/>
+                    <TextBlock DockPanel.Dock="Right" Text="MB" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                    <TextBox x:Name="MemoryBox" DockPanel.Dock="Right" Width="96" LostFocus="OnMemory" VerticalAlignment="Center"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="最大内存" Style="{StaticResource Body}"/>
+                        <TextBlock Text="分配给游戏的 Java 堆内存" Style="{StaticResource Muted}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+            <Border Style="{StaticResource RowCard}">
+                <DockPanel>
+                    <c:SvgIcon Data="{StaticResource I.Download}" Style="{StaticResource RowIcon}"/>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding IsChecked, ElementName=AutoInstall, Converter={StaticResource OnOff}}" Margin="0,0,12,1" VerticalAlignment="Center"/>
+                        <CheckBox x:Name="AutoInstall" Style="{StaticResource Toggle}" Click="OnToggle"/>
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="自动安装" Style="{StaticResource Body}"/>
+                        <TextBlock Text="启动前检查并下载缺失的游戏文件和 Java" Style="{StaticResource Muted}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+            <Border Style="{StaticResource RowCard}">
+                <DockPanel>
+                    <c:SvgIcon Data="{StaticResource I.Gamepad}" Style="{StaticResource RowIcon}"/>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding IsChecked, ElementName=AutoConnect, Converter={StaticResource OnOff}}" Margin="0,0,12,1" VerticalAlignment="Center"/>
+                        <CheckBox x:Name="AutoConnect" Style="{StaticResource Toggle}" Click="OnToggle"/>
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="自动进服" Style="{StaticResource Body}"/>
+                        <TextBlock Text="游戏启动后直接连接服务器" Style="{StaticResource Muted}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <TextBlock Text="注入" Style="{StaticResource Section}"/>
+            <Border Style="{StaticResource RowCard}">
+                <DockPanel>
+                    <c:SvgIcon Data="{StaticResource I.Shield}" Style="{StaticResource RowIcon}"/>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding IsChecked, ElementName=EnableProxy, Converter={StaticResource OnOff}}" Margin="0,0,12,1" VerticalAlignment="Center"/>
+                        <CheckBox x:Name="EnableProxy" Style="{StaticResource Toggle}" Click="OnToggle"/>
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="proxy" Style="{StaticResource Body}"/>
+                        <TextBlock Text="注入代理 payload" Style="{StaticResource Muted}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+            <Border Style="{StaticResource RowCard}">
+                <DockPanel>
+                    <c:SvgIcon Data="{StaticResource I.Shield}" Style="{StaticResource RowIcon}"/>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding IsChecked, ElementName=EnableHwidSpoof, Converter={StaticResource OnOff}}" Margin="0,0,12,1" VerticalAlignment="Center"/>
+                        <CheckBox x:Name="EnableHwidSpoof" Style="{StaticResource Toggle}" Click="OnToggle"/>
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="hwidspoof" Style="{StaticResource Body}"/>
+                        <TextBlock Text="注入机器码伪装 payload" Style="{StaticResource Muted}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <TextBlock Text="其他" Style="{StaticResource Section}"/>
+            <Border Style="{StaticResource RowCard}">
+                <DockPanel>
+                    <c:SvgIcon Data="{StaticResource I.Bell}" Style="{StaticResource RowIcon}"/>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding IsChecked, ElementName=CheckUpdate, Converter={StaticResource OnOff}}" Margin="0,0,12,1" VerticalAlignment="Center"/>
+                        <CheckBox x:Name="CheckUpdate" Style="{StaticResource Toggle}" Click="OnToggle"/>
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="启动时检查更新" Style="{StaticResource Body}"/>
+                        <TextBlock Text="从 GitHub Releases 获取最新版本" Style="{StaticResource Muted}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+            <Border Style="{StaticResource RowCard}">
+                <DockPanel>
+                    <c:SvgIcon Data="{StaticResource I.Terminal}" Style="{StaticResource RowIcon}"/>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding IsChecked, ElementName=Verbose, Converter={StaticResource OnOff}}" Margin="0,0,12,1" VerticalAlignment="Center"/>
+                        <CheckBox x:Name="Verbose" Style="{StaticResource Toggle}" Click="OnToggle"/>
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="详细日志" Style="{StaticResource Body}"/>
+                        <TextBlock Text="输出更多调试信息" Style="{StaticResource Muted}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

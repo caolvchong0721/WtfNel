@@ -58,8 +58,8 @@ public static class YggdrasilSetup
         return LoginAsync(cfg, channel, cfg.LoginAccount, secret);
     }
 
-    /// <summary>Logs in by channel: netease = email + password, cookie = sauth_json.</summary>
-    public static async Task<Login.NeteaseSession> LoginAsync(ShadowConfig cfg, string channel, string account, string secret, CancellationToken ct = default)
+    /// <summary>Logs in by channel: netease = email + password, 4399pc / 4399com = 4399 username + password, cookie = sauth_json.</summary>
+    public static async Task<Login.NeteaseSession> LoginAsync(ShadowConfig cfg, string channel, string account, string secret, Login.ICaptchaPrompt? captcha = null, CancellationToken ct = default)
     {
         using var login = new Login.NeteaseLogin(LauncherVersion(cfg), Path.Combine(AppContext.BaseDirectory, "cache", "login"));
         Log.Info($"[login] 实时登录 channel={channel}");
@@ -69,12 +69,20 @@ public static class YggdrasilSetup
                 if (string.IsNullOrWhiteSpace(account) || string.IsNullOrEmpty(secret))
                     throw new InvalidOperationException("网易邮箱登录需要邮箱和密码");
                 return await login.LoginWithEmailAsync(account.Trim(), secret, ct);
+            case "4399pc":
+                if (string.IsNullOrWhiteSpace(account) || string.IsNullOrEmpty(secret))
+                    throw new InvalidOperationException("4399 登录需要用户名和密码");
+                return await login.LoginWith4399Async(account.Trim(), secret, captcha, ct);
+            case "4399com":
+                if (string.IsNullOrWhiteSpace(account) || string.IsNullOrEmpty(secret))
+                    throw new InvalidOperationException("4399 登录需要用户名和密码");
+                return await login.LoginWith4399ComAsync(account.Trim(), secret, captcha, ct);
             case "cookie":
                 if (string.IsNullOrWhiteSpace(secret))
                     throw new InvalidOperationException("Cookie 登录需要 sauth_json");
                 return await login.LoginWithCookieAsync(secret, ct);
             default:
-                throw new NotSupportedException($"不支持的登录渠道: {channel}（可用 netease / cookie）");
+                throw new NotSupportedException($"不支持的登录渠道: {channel}（可用 netease / 4399pc / 4399com / cookie）");
         }
     }
 

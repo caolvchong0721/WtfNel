@@ -58,7 +58,7 @@ public sealed class LauncherBridge : IAsyncDisposable
         {
             client.NoDelay = true;
             var stream = client.GetStream();
-            bool connectSent = false;
+            int pushed = 0;
             try
             {
                 while (!ct.IsCancellationRequested)
@@ -73,21 +73,14 @@ public sealed class LauncherBridge : IAsyncDisposable
                     int smid = Frame.MessageId(payload);
                     switch (smid)
                     {
-                        case MessageIds.Login:
-                            await ReplyAsync(stream, payload, ct);
-                            break;
-                        case MessageIds.StateQuery:
-                            await ReplyAsync(stream, payload, ct);
-                            break;
-                        case MessageIds.Ping:
-                            await ReplyAsync(stream, payload, ct);
-                            break;
                         case MessageIds.KeepAlive:
-                            if (!connectSent && _autoConnect is { } target)
+                        case MessageIds.StateQuery:
+                            if (pushed == 0 && _autoConnect is { } target)
                             {
-                                connectSent = true;
+                                pushed = 1;
                                 var ok = await PushConnectAsync(client, target.Host, target.Port, target.Name, ct);
                                 Log.Info($"[bridge] #{id} -> 回 1799 进服 {target.Host}:{target.Port} ok={ok}");
+                                _ = RepushAsync(client, id, ct);
                             }
                             else
                             {
@@ -112,6 +105,22 @@ public sealed class LauncherBridge : IAsyncDisposable
     {
         try { await Frame.WriteAsync(stream, payload, ct); }
         catch (Exception ex) { Log.Warn("[bridge] 应答失败: " + ex.Message); }
+    }
+
+    /// <summary>Pushes the join command once more after a short delay, covering the case where the first push
+    /// arrives before the client reaches a state where it can act on it.</summary>
+    private async Task RepushAsync(TcpClient client, int id, CancellationToken ct)
+    {
+        if (_autoConnect is not { } target) return;
+        try
+        {
+            await Task.Delay(3500, ct);
+            if (!client.Connected) return;
+            var ok = await PushConnectAsync(client, target.Host, target.Port, target.Name, ct);
+            Log.Info($"[bridge] #{id} -> 1799 重推 {target.Host}:{target.Port} ok={ok}");
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Log.Debug("[bridge] 重推失败: " + ex.Message); }
     }
 
     /// <summary>Pushes a "join server" command to the connection.</summary>

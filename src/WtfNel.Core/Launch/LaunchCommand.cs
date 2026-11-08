@@ -41,7 +41,7 @@ public static class LaunchCommand
             ["filter_key"] = RandomLower(32),
             ["filter_path"] = "",
             ["launcher_version"] = cfg.LauncherVersion,
-            ["connect"] = cfg.AutoConnect ? $"--server {cfg.ConnectHost} --port {cfg.ConnectPort}" : "",
+            ["connect"] = cfg.AutoConnect ? $"--quickPlayMultiplayer {cfg.ConnectHost}:{cfg.ConnectPort}" : "",
             ["extra_jvm"] = string.Join(' ', cfg.ExtraJvmArgs.Select(Quote)),
             ["extra_game"] = string.Join(' ', cfg.ExtraGameArgs.Select(Quote)),
         };

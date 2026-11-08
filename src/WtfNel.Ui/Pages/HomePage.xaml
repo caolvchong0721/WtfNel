@@ -1,0 +1,129 @@
+<UserControl x:Class="WtfNel.Ui.Pages.HomePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:WtfNel.Ui.Controls">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="40,8,40,32">
+        <StackPanel MaxWidth="1000">
+            <TextBlock Text="主页" Style="{StaticResource H1}"/>
+
+            <Border x:Name="EmptyState" Style="{StaticResource Card}" Padding="24" Visibility="Collapsed">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" VerticalAlignment="Center" Click="OnGoAccounts">添加账号</Button>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="还没有账号" Style="{StaticResource H2}"/>
+                        <TextBlock Text="添加一个网易邮箱、4399、4399com 或 Cookie 账号后就能启动游戏。" Style="{StaticResource Muted}" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <StackPanel x:Name="MainArea">
+                <Border Style="{StaticResource RowCard}">
+                    <DockPanel>
+                        <c:SvgIcon Data="{StaticResource I.User}" Width="20" Height="20" DockPanel.Dock="Left" Margin="0,0,16,0"/>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <ComboBox x:Name="AccountBox" Width="240" SelectionChanged="OnAccountChanged">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Name}"/>
+                                            <TextBlock Text="{Binding ChannelLabel}" Margin="8,0,0,0" Foreground="{DynamicResource TextTertiary}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button x:Name="LoginButton" Margin="8,0,0,0" MinWidth="88" Click="OnLogin">
+                                <TextBlock x:Name="LoginText" Text="登录"/>
+                            </Button>
+                        </StackPanel>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="账号" Style="{StaticResource Body}"/>
+                            <TextBlock x:Name="SessionText" Text="未登录" Style="{StaticResource Muted}"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource RowCard}" Padding="16,12,16,12">
+                    <StackPanel>
+                        <DockPanel MinHeight="42">
+                            <c:SvgIcon Data="{StaticResource I.Gamepad}" Width="20" Height="20" DockPanel.Dock="Left" Margin="0,0,16,0"/>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button x:Name="RefreshRoles" Click="OnRefreshRoles" MinWidth="88">刷新</Button>
+                                <Button x:Name="CreateRole" Click="OnCreateRole" Margin="8,0,0,0" MinWidth="88">新建角色</Button>
+                            </StackPanel>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="角色" Style="{StaticResource Body}"/>
+                                <TextBlock x:Name="RoleHint" Text="登录后显示这个账号在服务器里的角色" Style="{StaticResource Muted}"/>
+                            </StackPanel>
+                        </DockPanel>
+                        <ProgressBar x:Name="RoleLoading" Style="{StaticResource ThinProgress}" IsIndeterminate="True" Visibility="Collapsed" Margin="36,8,0,0"/>
+                        <ListBox x:Name="RoleList" SelectionChanged="OnRoleChanged" Margin="36,10,0,0"
+                                 ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource SelectCard}">
+                                    <Setter Property="Margin" Value="0,0,8,8"/>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" MinWidth="120">
+                                        <TextBlock Text="{Binding Name}" Foreground="{DynamicResource TextPrimary}"/>
+                                        <TextBlock Text="上次" FontSize="12" Foreground="{DynamicResource TextTertiary}" Margin="8,1,0,0"
+                                                   Visibility="{Binding LastUsedVisibility}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="启动" Style="{StaticResource Section}"/>
+                <Border Style="{StaticResource RowCard}">
+                    <DockPanel>
+                        <c:SvgIcon Data="{StaticResource I.Server}" Width="20" Height="20" DockPanel.Dock="Left" Margin="0,0,16,0"/>
+                        <TextBlock x:Name="ServerText" DockPanel.Dock="Right" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                        <TextBlock Text="服务器" Style="{StaticResource Body}" VerticalAlignment="Center"/>
+                    </DockPanel>
+                </Border>
+                <Border Style="{StaticResource RowCard}">
+                    <DockPanel>
+                        <c:SvgIcon Data="{StaticResource I.Shield}" Width="20" Height="20" DockPanel.Dock="Left" Margin="0,0,16,0"/>
+                        <TextBlock x:Name="InjectText" DockPanel.Dock="Right" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                        <TextBlock Text="注入" Style="{StaticResource Body}" VerticalAlignment="Center"/>
+                    </DockPanel>
+                </Border>
+                <Border Style="{StaticResource RowCard}">
+                    <DockPanel>
+                        <c:SvgIcon Data="{StaticResource I.Folder}" Width="20" Height="20" DockPanel.Dock="Left" Margin="0,0,16,0"/>
+                        <TextBlock x:Name="DirText" DockPanel.Dock="Right" Style="{StaticResource Muted}" VerticalAlignment="Center"
+                                   MaxWidth="460" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                        <TextBlock Text="游戏目录" Style="{StaticResource Body}" VerticalAlignment="Center"/>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource RowCard}" Margin="0,12,0,0">
+                    <StackPanel>
+                        <DockPanel>
+                            <Button x:Name="LaunchButton" DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" MinWidth="140" Click="OnLaunch" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <c:SvgIcon x:Name="LaunchIcon" Data="{StaticResource I.Play}" Width="14" Height="14" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    <TextBlock x:Name="LaunchText" Text="启动游戏" Margin="8,0,0,0"/>
+                                </StackPanel>
+                            </Button>
+                            <c:SvgIcon Data="{StaticResource I.Play}" Width="20" Height="20" DockPanel.Dock="Left" Margin="0,0,16,0"/>
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock x:Name="LaunchSummary" Style="{StaticResource Body}" Text="请先选择账号和角色"/>
+                                <TextBlock x:Name="StatusText" Style="{StaticResource Muted}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                            </StackPanel>
+                        </DockPanel>
+                        <ProgressBar x:Name="ProgressArea" Style="{StaticResource ThinProgress}" IsIndeterminate="True" Visibility="Collapsed" Margin="36,10,0,0"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -60,6 +60,66 @@ public sealed class NeteaseLogin : IDisposable
         return await LoginWithCookieAsync(sauth, ct);
     }
 
+    /// <summary>4399 PC channel: ptlogin username + password → 4399 SDK credentials → sauth_json → cookie login.</summary>
+    public async Task<NeteaseSession> LoginWith4399Async(string username, string password, ICaptchaPrompt? captcha = null, CancellationToken ct = default)
+    {
+        Pc4399Credentials cred;
+        using (var pc = new Pc4399Login(captcha)) cred = await pc.LoginAsync(username, password, ct);
+
+        var deviceId = LoadOrCreateUnique();
+        var sauth = new JsonObject
+        {
+            ["timestamp"] = cred.Time,
+            ["userid"] = cred.Username,
+            ["realname"] = "{\"realname_type\":\"0\"}",
+            ["gameid"] = "x19",
+            ["login_channel"] = "4399pc",
+            ["app_channel"] = "4399pc",
+            ["platform"] = "pc",
+            ["sdkuid"] = cred.Uid,
+            ["sessionid"] = cred.Token,
+            ["sdk_version"] = "1.0.0",
+            ["udid"] = Convert.ToHexString(RandomNumberGenerator.GetBytes(8)).ToLowerInvariant(),
+            ["deviceid"] = deviceId,
+            ["aim_info"] = await AimInfoAsync(ct),
+            ["client_login_sn"] = deviceId,
+            ["gas_token"] = "",
+            ["source_platform"] = "pc",
+            ["ip"] = await GatewayIpAsync(ct),
+        }.ToJsonString(Json);
+        return await LoginWithCookieAsync(sauth, ct);
+    }
+
+    /// <summary>4399com channel: 4399 mobile SDK OAuth (captchas go to <paramref name="captcha"/>) → sauth_json → cookie login.</summary>
+    public async Task<NeteaseSession> LoginWith4399ComAsync(string username, string password, ICaptchaPrompt? captcha = null, CancellationToken ct = default)
+    {
+        Com4399Credentials cred;
+        using (var com = new Com4399Login(_stateDir, captcha)) cred = await com.LoginAsync(username, password, ct);
+
+        var deviceId = Guid.NewGuid().ToString("N").ToUpperInvariant();
+        var sauth = new JsonObject
+        {
+            ["timestamp"] = "",
+            ["userid"] = "",
+            ["realname"] = "{\"realname_type\":\"0\"}",
+            ["gameid"] = "x19",
+            ["login_channel"] = "4399com",
+            ["app_channel"] = "4399com",
+            ["platform"] = "ad",
+            ["sdkuid"] = cred.Uid,
+            ["sessionid"] = cred.State,
+            ["sdk_version"] = "1.0.0",
+            ["udid"] = Convert.ToHexString(RandomNumberGenerator.GetBytes(8)).ToLowerInvariant(),
+            ["deviceid"] = deviceId,
+            ["aim_info"] = await AimInfoAsync(ct),
+            ["client_login_sn"] = deviceId,
+            ["gas_token"] = "",
+            ["source_platform"] = "ad",
+            ["ip"] = await GatewayIpAsync(ct),
+        }.ToJsonString(Json);
+        return await LoginWithCookieAsync(sauth, ct);
+    }
+
     /// <summary>The cookie may be the sauth_json itself or a {"sauth_json":"..."} wrapper.</summary>
     public async Task<NeteaseSession> LoginWithCookieAsync(string cookie, CancellationToken ct = default)
     {
@@ -149,13 +209,17 @@ public sealed class NeteaseLogin : IDisposable
 
     private sealed record Device(string Id, string Key);
 
-    private async Task<(string Unique, Device Device)> LoadOrCreateDeviceAsync(CancellationToken ct)
+    private string LoadOrCreateUnique()
     {
         var uniqueFile = Path.Combine(_stateDir, MPayGameId + "-guid.cds");
-        var deviceFile = Path.Combine(_stateDir, MPayGameId + "-device.cds");
-
         if (!File.Exists(uniqueFile)) File.WriteAllText(uniqueFile, Guid.NewGuid().ToString("N"));
-        var unique = File.ReadAllText(uniqueFile).Trim();
+        return File.ReadAllText(uniqueFile).Trim();
+    }
+
+    private async Task<(string Unique, Device Device)> LoadOrCreateDeviceAsync(CancellationToken ct)
+    {
+        var deviceFile = Path.Combine(_stateDir, MPayGameId + "-device.cds");
+        var unique = LoadOrCreateUnique();
 
         if (!File.Exists(deviceFile))
         {
@@ -239,7 +303,26 @@ public sealed class NeteaseLogin : IDisposable
         var text = await resp.Content.ReadAsStringAsync(ct);
         using var doc = JsonDocument.Parse(text);
         var code = doc.RootElement.TryGetProperty("code", out var c) ? c.ToString() : "";
-        if (code != "200") throw new InvalidOperationException($"uni_sauth 失败 code={code}: {text}");
+        if (code == "200") return;
+        Log.Debug("[login] uni_sauth 被拒 code=" + code + " " + text);
+        var reason = UniSauthReason(doc.RootElement);
+        if (reason.Contains("10204"))
+            throw new InvalidOperationException("渠道凭证已失效（10204 验证失败）：这个账号在别处重新登录过，旧的 sauth_json 已作废。Cookie 账号请重新获取 sauth_json，4399 账号请重新登录。");
+        throw new InvalidOperationException($"渠道校验未通过（code={code}）：{reason}");
+    }
+
+    /// <summary>Extracts a readable reason from a rejected uni_sauth response: msg without ntsdk markup, else the base64-decoded debug_message.</summary>
+    private static string UniSauthReason(JsonElement root)
+    {
+        var msg = root.TryGetProperty("msg", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() ?? "" : "";
+        msg = System.Text.RegularExpressions.Regex.Replace(msg, @"</?ntsdk[^>]*>", "").Trim();
+        if (msg.Length > 0) return msg;
+        if (root.TryGetProperty("debug_message", out var d) && d.ValueKind == JsonValueKind.String && d.GetString() is { Length: > 0 } raw)
+        {
+            try { return Encoding.UTF8.GetString(Convert.FromBase64String(raw)).Trim(); }
+            catch (FormatException) { return raw; }
+        }
+        return root.GetRawText();
     }
 
     /// <summary>aim_info: whoami geo data (same as FandNEL's InternalQuery.ToAimInfo); falls back to defaults on failure.</summary>
@@ -271,6 +354,23 @@ public sealed class NeteaseLogin : IDisposable
         }
     }
 
+    private async Task<string> GatewayIpAsync(CancellationToken ct)
+    {
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, "http://nstool.netease.com/internalquery");
+            req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            using var resp = await _http.SendAsync(req, ct);
+            foreach (var line in (await resp.Content.ReadAsStringAsync(ct)).Split('\n'))
+            {
+                var parts = line.Split('=');
+                if (parts.Length == 2 && parts[0].Trim() == "gw" && parts[1].Trim().Length > 0) return parts[1].Trim();
+            }
+        }
+        catch (Exception ex) { Log.Warn("[login] internalquery 失败，ip 用默认值: " + ex.Message); }
+        return "127.0.0.1";
+    }
+
     private async Task<JsonDocument> PostJsonAsync(string url, string body, CancellationToken ct)
     {
         using var resp = await _http.PostAsync(url, new StringContent(body, Encoding.UTF8, "application/json"), ct);
@@ -300,6 +400,8 @@ public sealed class NeteaseLogin : IDisposable
         try
         {
             using var doc = JsonDocument.Parse(cookie);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                throw new InvalidDataException("cookie 应为 sauth_json 对象（{...}），当前是 " + doc.RootElement.ValueKind);
             if (doc.RootElement.TryGetProperty("sauth_json", out var inner) && inner.ValueKind == JsonValueKind.String)
                 return inner.GetString()!;
         }

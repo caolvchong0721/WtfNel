@@ -52,15 +52,15 @@
 
 ## 快速开始
 
-双击 `WtfNel.exe`，或者在仓库根目录执行：
+双击 `WtfNel.Ui.exe`，或者在仓库根目录执行：
 
 ```bash
-dotnet run --project src/WtfNel
+dotnet run --project src/WtfNel.Ui
 ```
 
-进入菜单后选账号，选角色，客户端会带着参数启动。「注入设置」里开着的 payload 会在检测到游戏窗口后自动注入。
+在「账号」页添加账号，回到「主页」登录、选角色，点「启动游戏」。「设置 → 注入」里开着的 payload 会在检测到游戏窗口后自动注入。
 
-端口就绪时控制台会打印：
+端口就绪时「日志」页会显示：
 
 ```text
 [inject] 代理端口已开启：127.0.0.1:13337
@@ -76,15 +76,15 @@ dotnet run --project src/WtfNel
 dotnet build WtfNel.slnx
 ```
 
-> 输出：`src/WtfNel/bin/Debug/net9.0/WtfNel.dll`，payload 自动复制到同目录 `payloads/`。
+> 输出：`src/WtfNel.Ui/bin/Debug/net9.0-windows/WtfNel.Ui.exe`，payload 自动复制到同目录 `payloads/`。
 
 ### 发布单文件版本
 
 ```bash
-dotnet publish src/WtfNel/WtfNel.csproj -p:PublishProfile=win-x64-single
+dotnet publish src/WtfNel.Ui/WtfNel.Ui.csproj -p:PublishProfile=win-x64-single
 ```
 
-> 输出：`src/WtfNel/bin/publish/WtfNel.exe`，payload 在 `publish/payloads/`。
+> 输出：`src/WtfNel.Ui/bin/publish/WtfNel.Ui.exe`，payload 在 `publish/payloads/`。
 
 ### 只构建 payload
 

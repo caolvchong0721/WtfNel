@@ -6,8 +6,8 @@ namespace WtfNel.Core;
 /// <summary>Runtime configuration. Every field can be overridden in shadow.json to switch machines or accounts.</summary>
 public sealed class ShadowConfig
 {
-    /// <summary>The .minecraft root directory.</summary>
-    public string GameDir { get; set; } = @"D:\MCLDownload\Game\.minecraft";
+    /// <summary>The .minecraft root directory. Empty triggers auto-detection (see <see cref="GameDirLocator"/>).</summary>
+    public string GameDir { get; set; } = "";
 
     /// <summary>
     /// Java used by the client. Empty uses the NetEase Java (&lt;MCL root&gt;\ext\jre-v64-220420,

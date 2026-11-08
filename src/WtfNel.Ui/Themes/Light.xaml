@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="Accent" Color="#005FB8"/>
+    <SolidColorBrush x:Key="AccentText" Color="#0058A8"/>
+    <SolidColorBrush x:Key="AccentSoft" Color="#F0F6FC"/>
+    <SolidColorBrush x:Key="AccentBorder" Color="#A6CBEE"/>
+    <SolidColorBrush x:Key="OnAccent" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="WindowBg" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="SidebarBg" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="CardBg" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="CardHover" Color="#FAFAFA"/>
+    <SolidColorBrush x:Key="Stroke" Color="#E9E9E9"/>
+    <SolidColorBrush x:Key="StrokeStrong" Color="#DCDCDC"/>
+    <SolidColorBrush x:Key="ControlBottom" Color="#C2C2C2"/>
+    <SolidColorBrush x:Key="TextPrimary" Color="#1B1B1B"/>
+    <SolidColorBrush x:Key="TextSecondary" Color="#5F5F5F"/>
+    <SolidColorBrush x:Key="TextTertiary" Color="#8E8E8E"/>
+    <SolidColorBrush x:Key="InputBg" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="InputHover" Color="#FAFAFA"/>
+    <SolidColorBrush x:Key="SubtleFill" Color="#F3F3F3"/>
+    <SolidColorBrush x:Key="SubtlePressed" Color="#EBEBEB"/>
+    <SolidColorBrush x:Key="NavSelected" Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="Overlay" Color="#4D000000"/>
+    <SolidColorBrush x:Key="DialogFooter" Color="#F7F7F7"/>
+    <SolidColorBrush x:Key="Danger" Color="#C42B1C"/>
+    <SolidColorBrush x:Key="DangerSoft" Color="#FDF1F0"/>
+    <SolidColorBrush x:Key="DangerBorder" Color="#EFB8B3"/>
+    <SolidColorBrush x:Key="Success" Color="#0F7B0F"/>
+    <SolidColorBrush x:Key="SuccessSoft" Color="#EEF8EC"/>
+    <SolidColorBrush x:Key="Warning" Color="#9D5D00"/>
+    <SolidColorBrush x:Key="WarningSoft" Color="#FFF6E0"/>
+    <SolidColorBrush x:Key="ToggleOffBorder" Color="#878787"/>
+    <SolidColorBrush x:Key="ToggleOffKnob" Color="#5F5F5F"/>
+    <SolidColorBrush x:Key="ScrollThumb" Color="#C8C8C8"/>
+    <LinearGradientBrush x:Key="ControlBorder" MappingMode="Absolute" StartPoint="0,0" EndPoint="0,3">
+        <LinearGradientBrush.RelativeTransform>
+            <ScaleTransform ScaleY="-1" CenterY="0.5"/>
+        </LinearGradientBrush.RelativeTransform>
+        <GradientStop Offset="0.33" Color="#33000000"/>
+        <GradientStop Offset="1.0" Color="#17000000"/>
+    </LinearGradientBrush>
+</ResourceDictionary>

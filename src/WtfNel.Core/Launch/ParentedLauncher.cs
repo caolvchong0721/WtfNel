@@ -142,9 +142,12 @@ public static class ParentedLauncher
         }
     }
 
-    /// <summary>Replays a full command line verbatim, avoiding any corruption from tokenizing and rebuilding it.</summary>
+    /// <summary>
+    /// Replays a full command line verbatim, avoiding any corruption from tokenizing and rebuilding it.
+    /// <paramref name="env"/> is the full override environment block (null inherits the creator's).
+    /// </summary>
     public static int StartRaw(string exePath, string commandLine, string workingDirectory, int parentPid,
-        bool newConsole = false, bool inheritStdio = false)
+        bool newConsole = false, bool inheritStdio = false, IDictionary<string, string>? env = null)
     {
         IntPtr parent = OpenProcess(PROCESS_CREATE_PROCESS | PROCESS_QUERY_INFORMATION | PROCESS_DUP_HANDLE, false, parentPid);
         if (parent == IntPtr.Zero)
@@ -152,6 +155,7 @@ public static class ParentedLauncher
 
         IntPtr attrList = IntPtr.Zero;
         IntPtr parentValue = IntPtr.Zero;
+        IntPtr envBlock = IntPtr.Zero;
         try
         {
             IntPtr size = IntPtr.Zero;
@@ -180,9 +184,11 @@ public static class ParentedLauncher
             uint flags = EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT;
             if (newConsole) flags |= CREATE_NEW_CONSOLE;
 
+            if (env is not null) envBlock = BuildEnvironmentBlock(env);
+
             var cmdBuf = new StringBuilder(commandLine, commandLine.Length + 1);
             if (!CreateProcessW(exePath, cmdBuf.ToString(), IntPtr.Zero, IntPtr.Zero, inheritStdio, flags,
-                    IntPtr.Zero, workingDirectory, ref si, out var info))
+                    envBlock, workingDirectory, ref si, out var info))
                 throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "创建子进程失败");
 
             CloseHandle(info.hThread);
@@ -192,9 +198,39 @@ public static class ParentedLauncher
         finally
         {
             if (attrList != IntPtr.Zero) { DeleteProcThreadAttributeList(attrList); Marshal.FreeHGlobal(attrList); }
+            if (envBlock != IntPtr.Zero) Marshal.FreeHGlobal(envBlock);
             if (parentValue != IntPtr.Zero) Marshal.FreeHGlobal(parentValue);
             CloseHandle(parent);
         }
+    }
+
+    /// <summary>
+    /// Copies the current environment and prepends the given directories to PATH, so the child JVM can
+    /// resolve the NetEase runtime DLLs (api-ms-win-crt-utility-l1-1-1.dll and its siblings such as
+    /// libenvsdk.dll / msvcp140.dll) that live only in versions\&lt;v&gt;\natives\runtime. Windows resolves
+    /// a DLL's own dependencies through the loading process directory and PATH, never the DLL's directory,
+    /// so without this the load fails with "Can't find dependent libraries". Missing directories and
+    /// duplicates are skipped. The directories actually prepended are returned via <paramref name="prepended"/>.
+    /// </summary>
+    public static Dictionary<string, string> BuildChildEnvironment(IEnumerable<string> prependPaths, out List<string> prepended)
+    {
+        var env = CurrentEnvironment();
+        var existing = (env.TryGetValue("PATH", out var p) ? p : "")
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+        var seen = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
+
+        prepended = new List<string>();
+        foreach (var dir in prependPaths)
+        {
+            if (string.IsNullOrWhiteSpace(dir)) continue;
+            var full = Path.GetFullPath(dir);
+            if (!Directory.Exists(full) || !seen.Add(full)) continue;
+            prepended.Add(full);
+        }
+
+        env["PATH"] = string.Join(';', prepended.Concat(existing));
+        return env;
     }
 
     private static IntPtr MakeInheritable(IntPtr h)

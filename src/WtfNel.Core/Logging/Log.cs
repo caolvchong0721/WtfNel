@@ -14,6 +14,15 @@ public static class Log
     private static string? _status;
     public static bool Verbose { get; set; }
 
+    /// <summary>Raised for every log entry with its level (DBG/INF/WRN/ERR), timestamp and message.</summary>
+    public static event Action<string, DateTime, string>? Written;
+
+    /// <summary>Raised when the pinned status line changes; the text has markup removed, null when cleared.</summary>
+    public static event Action<string?>? StatusChanged;
+
+    /// <summary>Disables console output when the host has no console window.</summary>
+    public static bool ConsoleEnabled { get; set; } = true;
+
     public static void Open(string path)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -31,7 +40,8 @@ public static class Log
     public static void Raw(string line)
     {
         lock (Gate) { _file?.WriteLine(line); }
-        Console.WriteLine(line);
+        if (ConsoleEnabled) Console.WriteLine(line);
+        Written?.Invoke("RAW", DateTime.Now, line);
     }
 
     private static void Write(string level, string msg)
@@ -41,7 +51,7 @@ public static class Log
         var color = level switch { "WRN" => "yellow", "ERR" => "red", "DBG" => "grey", _ => "default" };
         lock (Gate)
         {
-            if (level != "DBG" || Verbose)
+            if (ConsoleEnabled && (level != "DBG" || Verbose))
             {
                 if (_status is not null) Console.Write(ClearLine);
                 AnsiConsole.MarkupLine($"[grey]{now:HH:mm:ss}[/] [{color}]{Markup.Escape(msg)}[/]");
@@ -49,6 +59,7 @@ public static class Log
             }
             _file?.WriteLine(line);
         }
+        Written?.Invoke(level, now, msg);
     }
 
     /// <summary>Sets or refreshes the pinned bottom status line (markup, redrawn in place); null clears it.</summary>
@@ -56,10 +67,14 @@ public static class Log
     {
         lock (Gate)
         {
-            Console.Write(ClearLine);
             _status = markup;
-            if (markup is not null) AnsiConsole.Markup(markup);
+            if (ConsoleEnabled)
+            {
+                Console.Write(ClearLine);
+                if (markup is not null) AnsiConsole.Markup(markup);
+            }
         }
+        StatusChanged?.Invoke(markup is null ? null : Markup.Remove(markup));
     }
 
     public static void Close()

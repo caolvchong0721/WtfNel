@@ -1,9 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>WtfNel</RootNamespace>
-    <AssemblyName>WtfNel</AssemblyName>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <RootNamespace>WtfNel.Ui</RootNamespace>
+    <AssemblyName>WtfNel.Ui</AssemblyName>
+    <Version>1.0.0</Version>
     <ServerGarbageCollection>false</ServerGarbageCollection>
   </PropertyGroup>
 
@@ -12,12 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    
     <None Include="..\WtfNel.Core\Assets\LocalRuntime\**\*" Link="LocalRuntime\%(RecursiveDir)%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
-  
   <Target Name="BuildStub" BeforeTargets="Build;Publish">
     <MSBuild Projects="$(MSBuildThisFileDirectory)..\WtfNel.Stub\WtfNel.Stub.csproj"
              Targets="Build" Properties="Configuration=$(Configuration)" />
@@ -25,19 +27,21 @@
 
   <Target Name="CopyStubToOutput" AfterTargets="Build">
     <ItemGroup>
-      <_StubOut Include="$(MSBuildThisFileDirectory)..\WtfNel.Stub\bin\$(Configuration)\$(TargetFramework)\WPFLauncher.*" />
+      <_StubOut Include="$(MSBuildThisFileDirectory)..\WtfNel.Stub\bin\$(Configuration)\net9.0\WPFLauncher.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_StubOut)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="CopyStubToPublish" AfterTargets="Publish">
-    <ItemGroup>
-      <_StubPub Include="$(MSBuildThisFileDirectory)..\WtfNel.Stub\bin\$(Configuration)\$(TargetFramework)\WPFLauncher.*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_StubPub)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+    <PropertyGroup>
+      <_StubPublishDir>$(MSBuildThisFileDirectory)..\WtfNel.Stub\bin\publish\</_StubPublishDir>
+    </PropertyGroup>
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\WtfNel.Stub\WtfNel.Stub.csproj" Targets="Publish"
+             Properties="Configuration=Release;RuntimeIdentifier=win-x64;SelfContained=true;PublishSingleFile=true;PublishTrimmed=true;EnableCompressionInSingleFile=true;DebugType=none;PublishDir=$(_StubPublishDir)" />
+    <Delete Files="$(PublishDir)WPFLauncher.dll;$(PublishDir)WPFLauncher.deps.json;$(PublishDir)WPFLauncher.runtimeconfig.json" />
+    <Copy SourceFiles="$(_StubPublishDir)WPFLauncher.exe" DestinationFolder="$(PublishDir)" />
   </Target>
 
-  
   <PropertyGroup>
     <NativePayloadDir>$(MSBuildThisFileDirectory)..\..\native\build</NativePayloadDir>
   </PropertyGroup>
