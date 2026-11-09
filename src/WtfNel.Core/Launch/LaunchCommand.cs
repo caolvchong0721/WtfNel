@@ -39,8 +39,12 @@ public static class LaunchCommand
             ["xuid"] = cfg.Xuid,
             ["quick_play"] = $@"quickPlay\java\{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.json",
             ["filter_key"] = RandomLower(32),
-            ["filter_path"] = "",
+            ["filter_path"] = Esc(cfg.FilterPath),
             ["launcher_version"] = cfg.LauncherVersion,
+            ["launcher_brand"] = cfg.LauncherBrand,
+            ["launcher_file_version"] = string.IsNullOrWhiteSpace(cfg.LauncherFileVersion)
+                ? cfg.LauncherVersion
+                : cfg.LauncherFileVersion,
             ["connect"] = cfg.AutoConnect ? $"--quickPlayMultiplayer {cfg.ConnectHost}:{cfg.ConnectPort}" : "",
             ["extra_jvm"] = string.Join(' ', cfg.ExtraJvmArgs.Select(Quote)),
             ["extra_game"] = string.Join(' ', cfg.ExtraGameArgs.Select(Quote)),

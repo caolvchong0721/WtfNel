@@ -108,12 +108,26 @@
                 <Border Style="{StaticResource RowCard}" Margin="0,12,0,0">
                     <StackPanel>
                         <DockPanel>
-                            <Button x:Name="LaunchButton" DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" MinWidth="140" Click="OnLaunch" VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal">
-                                    <c:SvgIcon x:Name="LaunchIcon" Data="{StaticResource I.Play}" Width="14" Height="14" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
-                                    <TextBlock x:Name="LaunchText" Text="启动游戏" Margin="8,0,0,0"/>
-                                </StackPanel>
-                            </Button>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button x:Name="ProxyLaunchButton" Style="{StaticResource Btn.Primary}" MinWidth="124" Click="OnLaunchProxy" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <c:SvgIcon Data="{StaticResource I.Shield}" Width="14" Height="14" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                        <TextBlock Text="代理启动" Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="WhiteLaunchButton" MinWidth="124" Click="OnLaunchWhite" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <c:SvgIcon Data="{StaticResource I.Play}" Width="14" Height="14" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                        <TextBlock Text="白端启动" Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="LaunchButton" Style="{StaticResource Btn.Danger}" MinWidth="124" Click="OnLaunch" Visibility="Collapsed">
+                                    <StackPanel Orientation="Horizontal">
+                                        <c:SvgIcon x:Name="LaunchIcon" Data="{StaticResource I.Stop}" Width="14" Height="14" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                        <TextBlock x:Name="LaunchText" Text="停止游戏" Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
                             <c:SvgIcon Data="{StaticResource I.Play}" Width="20" Height="20" DockPanel.Dock="Left" Margin="0,0,16,0"/>
                             <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                                 <TextBlock x:Name="LaunchSummary" Style="{StaticResource Body}" Text="请先选择账号和角色"/>

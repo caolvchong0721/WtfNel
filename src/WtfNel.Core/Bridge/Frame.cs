@@ -68,7 +68,13 @@ public static class MessageIds
     public const int Login = 0;
     public const int Ping = 0x1202;
     public const int KeepAlive = 0x0501;
+    /// <summary>Reconnect request sent when a DisconnectedScreen click is redirected; the launcher must answer with <see cref="Reconnect"/>.</summary>
+    public const int ReconnectRequest = 0x0502;
+    /// <summary>ReplyReconnect: string host, int port, string room, boolean. The client reconnects itself on this frame.</summary>
+    public const int Reconnect = 0x0704;
     public const int ConnectServer = 0x0707;
     public const int TokenUpdate = 5121;
     public const int StateQuery = 2050;
+    /// <summary>Chat-ban query; the client blocks chat sending up to 10 s on the render thread until it gets (bool ban, long expireAt, long delta).</summary>
+    public const int ChatBanQuery = 4613;
 }

@@ -27,7 +27,6 @@ public partial class SettingsPage : UserControl
         MemoryBox.Text = cfg.MaxMemoryMb.ToString();
         AutoInstall.IsChecked = cfg.AutoInstall;
         AutoConnect.IsChecked = cfg.AutoConnect;
-        EnableProxy.IsChecked = cfg.EnableProxy;
         EnableHwidSpoof.IsChecked = cfg.EnableHwidSpoof;
         CheckUpdate.IsChecked = AppState.Ui.CheckUpdateOnStart;
         Verbose.IsChecked = Log.Verbose;
@@ -48,7 +47,6 @@ public partial class SettingsPage : UserControl
         var cfg = AppState.Config;
         cfg.AutoInstall = AutoInstall.IsChecked == true;
         cfg.AutoConnect = AutoConnect.IsChecked == true;
-        cfg.EnableProxy = EnableProxy.IsChecked == true;
         cfg.EnableHwidSpoof = EnableHwidSpoof.IsChecked == true;
         Log.Verbose = Verbose.IsChecked == true;
         AppState.SaveConfig();

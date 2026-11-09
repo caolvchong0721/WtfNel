@@ -28,6 +28,8 @@ void Dbg(const char* fmt, ...);
 
 void LogTo(const char* fmt, ...);
 
+const char* ProxyLogPath();
+
 void LogAndClearException(JNIEnv* env, const char* where);
 
 jobject GetMinecraftClassLoader(JNIEnv* env, jvmtiEnv* jvmti);

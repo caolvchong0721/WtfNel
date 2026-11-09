@@ -133,7 +133,7 @@ DWORD WINAPI BootstrapThread(LPVOID) {
 
 static void RawWriteFile(const char* line) {
 
-    HANDLE h = CreateFileA("D:\\.minecraft\\proxy.log",
+    HANDLE h = CreateFileA(ProxyLogPath(),
                            FILE_APPEND_DATA,
                            FILE_SHARE_READ | FILE_SHARE_WRITE,
                            NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);

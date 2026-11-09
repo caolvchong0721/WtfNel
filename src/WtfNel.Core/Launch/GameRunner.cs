@@ -25,6 +25,8 @@ public static class GameRunner
         var java = installer.LaunchJava;
         if (!File.Exists(java)) throw new FileNotFoundException("找不到 java（打开 AutoInstall 可自动下载）", java);
 
+        LauncherIdentity.Ensure(cfg, installer.MclRoot);
+
         if (cfg.AutoConnect)
         {
             ResolveServerAsync(cfg, YggdrasilSetup.CreateModProvider(cfg)).GetAwaiter().GetResult();
@@ -38,7 +40,7 @@ public static class GameRunner
         File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "logs", "launch-cmdline.txt"), raw);
         Log.Info($"[tpl] 角色 = {cfg.UserName}  uuid = {cfg.Uuid}  gameId = {gameId}");
         Log.Info("[tpl] java = " + java);
-        Log.Info($"[tpl] 桥接端口 = {port}  认证端口 = {cfg.AuthPort}");
+        Log.Info($"[tpl] 桥接端口 = {port}  认证端口 = {cfg.AuthPort}  模式 = {(cfg.EnableProxy ? "代理" : "白端")}");
 
         GameRelay? relay = null;
         if (cfg.UseRelay)
@@ -67,6 +69,7 @@ public static class GameRunner
 
             var childEnv = ParentedLauncher.BuildChildEnvironment(
                 new[] { cfg.RuntimeDir, cfg.NativeDir, Path.GetDirectoryName(java) ?? "" }, out var prepended);
+            childEnv["WTFNEL_LOG_DIR"] = Path.Combine(AppContext.BaseDirectory, "logs");
             Log.Info("[tpl] 子进程 PATH 追加: " + (prepended.Count > 0 ? string.Join(" | ", prepended) : "(无，目录不存在)"));
 
             int pid = ParentedLauncher.StartRaw(java, raw, cfg.GameDir, parent, env: childEnv);

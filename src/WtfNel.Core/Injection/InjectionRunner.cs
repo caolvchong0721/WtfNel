@@ -37,6 +37,9 @@ public static class InjectionRunner
 
     public static int ProxyPort { get; private set; }
 
+    /// <summary>Raised once the proxy payload has published its listening port.</summary>
+    public static event Action<int>? ProxyReady;
+
     public static IReadOnlyList<InjectionResult> InjectAll(ShadowConfig cfg, int? processId = null)
     {
         GameTarget target = ParseTarget(cfg.InjectTarget);
@@ -94,44 +97,33 @@ public static class InjectionRunner
                 Log = Log.Info,
             };
 
+            bool isProxy = Path.GetFileName(path).Contains("Payload.Proxy", StringComparison.OrdinalIgnoreCase);
+            HashSet<int>? listeningBefore = isProxy ? ProxyPortProbe.Snapshot() : null;
+
             InjectionResult result = InjectionService.Inject(pid, path, options);
             results.Add(result);
             if (result.Success) Log.Info("[inject] " + result);
             else Log.Warn("[inject] " + result);
 
-            if (result.Success && Path.GetFileName(path).Contains("Payload.Proxy", StringComparison.OrdinalIgnoreCase))
-                AnnounceProxyPort();
+            if (result.Success && listeningBefore is not null)
+                AnnounceProxyPort(listeningBefore);
         }
 
         return results;
     }
 
-    private static string PortFile => Path.Combine(Path.GetTempPath(), "WtfNel", "proxy-port.txt");
-
-    private static void TryDeletePortFile()
+    private static void AnnounceProxyPort(HashSet<int> listeningBefore)
     {
-        try { if (File.Exists(PortFile)) File.Delete(PortFile); }
-        catch { }
-    }
-
-    private static void AnnounceProxyPort()
-    {
-        DateTime deadline = DateTime.UtcNow.AddSeconds(20);
-        while (DateTime.UtcNow < deadline)
+        int? port = ProxyPortProbe.WaitForNew(listeningBefore);
+        if (port is not { } found)
         {
-            try
-            {
-                if (File.Exists(PortFile) && int.TryParse(File.ReadAllText(PortFile).Trim(), out int port))
-                {
-                    ProxyPort = port;
-                    Log.Info($"[inject] 代理端口已开启：127.0.0.1:{port}");
-                    return;
-                }
-            }
-            catch { }
-            Thread.Sleep(250);
+            Log.Warn($"[inject] 没等到代理端口：预期 127.0.0.1:{ProxyPortProbe.BasePort} 起 {ProxyPortProbe.Span} 个端口内出现新监听");
+            return;
         }
-        Log.Warn("[inject] 没等到代理端口文件：%TEMP%\\WtfNel\\proxy-port.txt");
+
+        ProxyPort = found;
+        Log.Info($"[inject] 代理端口已开启：127.0.0.1:{found}");
+        ProxyReady?.Invoke(found);
     }
 
     public static Thread StartBackground(ShadowConfig cfg)

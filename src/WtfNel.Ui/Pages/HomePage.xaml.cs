@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using WtfNel.Core.Auth;
 using WtfNel.Core.Auth.Login;
+using WtfNel.Core.Injection;
 using WtfNel.Core.Logging;
 using WtfNel.Ui.Services;
 
@@ -27,6 +28,8 @@ public partial class HomePage : UserControl
         AppState.SessionChanged += account => Dispatcher.BeginInvoke(() => OnSessionChanged(account));
         LogBuffer.StatusChanged += s => { if (s is not null) StatusText.Text = s; };
         Log.Written += OnLog;
+        InjectionRunner.ProxyReady += port => Dispatcher.BeginInvoke(() =>
+            _ = Dialogs.AlertAsync("代理已开启", $"代理已在 127.0.0.1:{port} 开启", DialogKind.Success));
         IsVisibleChanged += (_, e) => { if (e.NewValue is true) { RefreshInfo(); UpdateSessionState(); } };
         ReloadAccounts();
     }
@@ -91,11 +94,16 @@ public partial class HomePage : UserControl
     {
         bool running = AppState.IsRunning;
         var role = (RoleList.SelectedItem as RoleItem)?.Name;
-        LaunchButton.IsEnabled = running || (!_busy && Account is not null && (role is not null || Session is null));
-        LaunchButton.Style = (Style)FindResource(running ? "Btn.Danger" : "Btn.Primary");
+        bool canStart = !_busy && Account is not null && (role is not null || Session is null);
+
+        LaunchButton.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
+        ProxyLaunchButton.Visibility = running ? Visibility.Collapsed : Visibility.Visible;
+        WhiteLaunchButton.Visibility = running ? Visibility.Collapsed : Visibility.Visible;
+        LaunchButton.IsEnabled = running;
+        ProxyLaunchButton.IsEnabled = canStart;
+        WhiteLaunchButton.IsEnabled = canStart;
+
         RefreshInfo();
-        LaunchIcon.Data = Dialogs.Geo(running ? "I.Stop" : "I.Play");
-        LaunchText.Text = running ? "停止游戏" : Session is null ? "登录并选择角色" : "启动游戏";
         ProgressArea.Visibility = running || _busy ? Visibility.Visible : Visibility.Collapsed;
         LoginButton.IsEnabled = AccountBox.IsEnabled = RoleList.IsEnabled = !running && !_busy;
         LaunchSummary.Text = running ? $"正在运行：{AppState.RunningAccount?.Name}，角色 {AppState.RunningRole}"
@@ -192,11 +200,17 @@ public partial class HomePage : UserControl
 
     private async void OnLaunch(object sender, RoutedEventArgs e)
     {
-        if (AppState.IsRunning)
-        {
-            if (await Dialogs.ConfirmAsync("停止游戏", "会结束游戏客户端进程。", "停止", danger: true)) AppState.StopGame();
-            return;
-        }
+        if (!AppState.IsRunning) return;
+        if (await Dialogs.ConfirmAsync("停止游戏", "会结束游戏客户端进程。", "停止", danger: true)) AppState.StopGame();
+    }
+
+    private async void OnLaunchProxy(object sender, RoutedEventArgs e) => await StartAsync(true);
+
+    private async void OnLaunchWhite(object sender, RoutedEventArgs e) => await StartAsync(false);
+
+    private async Task StartAsync(bool proxy)
+    {
+        if (AppState.IsRunning) return;
         if (Account is not { } account) return;
         if (Session is null)
         {
@@ -205,12 +219,15 @@ public partial class HomePage : UserControl
         }
         if (RoleList.SelectedItem is not RoleItem role) return;
 
+        AppState.Config.EnableProxy = proxy;
+        AppState.SaveConfig();
+
         StatusText.Text = "正在准备…";
         RefreshInfo();
         try
         {
             var task = AppState.RunGameAsync(account, Session!, role.Name);
-            Dialogs.Toast($"正在以 {role.Name} 启动", DialogKind.Info);
+            Dialogs.Toast(proxy ? $"正在以 {role.Name} 代理启动" : $"正在以 {role.Name} 白端启动", DialogKind.Info);
             await task;
             Dialogs.Toast("游戏已退出", DialogKind.Info);
         }

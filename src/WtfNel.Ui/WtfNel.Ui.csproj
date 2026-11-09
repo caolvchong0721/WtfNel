@@ -43,15 +43,23 @@
   </Target>
 
   <PropertyGroup>
-    <NativePayloadDir>$(MSBuildThisFileDirectory)..\..\native\build</NativePayloadDir>
+    <NativePayloadBuildDir>$(MSBuildThisFileDirectory)..\..\native\build</NativePayloadBuildDir>
+    <NativePayloadPrebuiltDir>$(MSBuildThisFileDirectory)..\..\native\prebuilt</NativePayloadPrebuiltDir>
+    <NativePayloadDir Condition="'$(NativePayloadDir)' == ''">$(NativePayloadPrebuiltDir)</NativePayloadDir>
+    <BuildNativePayload Condition="'$(BuildNativePayload)' == ''">false</BuildNativePayload>
   </PropertyGroup>
 
-  <Target Name="BuildNativePayloads" BeforeTargets="Build" Condition="'$(SkipNativePayload)' != 'true'">
-    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)..\..\native\build.ps1&quot; -Configuration $(Configuration)"
+  <Target Name="BuildNativePayloads" BeforeTargets="Build"
+          Condition="'$(SkipNativePayload)' != 'true' and '$(BuildNativePayload)' == 'true'">
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)..\..\native\build.ps1&quot; -Configuration Release"
           ContinueOnError="true" />
+    <PropertyGroup>
+      <NativePayloadDir Condition="Exists('$(NativePayloadBuildDir)\WtfNel.Payload.Proxy.dll')">$(NativePayloadBuildDir)</NativePayloadDir>
+    </PropertyGroup>
+    <Message Importance="high" Text="[native] payload 取自 $(NativePayloadDir)" />
   </Target>
 
-  <Target Name="CopyPayloadsToOutput" AfterTargets="Build">
+  <Target Name="CopyPayloadsToOutput" AfterTargets="Build" Condition="'$(SkipNativePayload)' != 'true'">
     <ItemGroup>
       <_PayloadNative Include="$(NativePayloadDir)\WtfNel.Payload.HwidSpoof.dll" />
       <_PayloadNative Include="$(NativePayloadDir)\WtfNel.Payload.Proxy.dll" />
@@ -59,7 +67,7 @@
     <Copy SourceFiles="@(_PayloadNative)" DestinationFolder="$(OutDir)payloads" SkipUnchangedFiles="true" ContinueOnError="true" />
   </Target>
 
-  <Target Name="CopyPayloadsToPublish" AfterTargets="Publish">
+  <Target Name="CopyPayloadsToPublish" AfterTargets="Publish" Condition="'$(SkipNativePayload)' != 'true'">
     <ItemGroup>
       <_PayloadNativePublish Include="$(NativePayloadDir)\WtfNel.Payload.HwidSpoof.dll" />
       <_PayloadNativePublish Include="$(NativePayloadDir)\WtfNel.Payload.Proxy.dll" />

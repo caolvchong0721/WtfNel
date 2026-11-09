@@ -13,6 +13,7 @@ public sealed class LauncherBridge : IAsyncDisposable
 {
     private readonly int _port;
     private readonly CancellationTokenSource _cts = new();
+    private readonly SemaphoreSlim _writeGate = new(1, 1);
     private TcpListener? _listener;
     private int _connSeq;
 
@@ -71,6 +72,7 @@ public sealed class LauncherBridge : IAsyncDisposable
                     }
 
                     int smid = Frame.MessageId(payload);
+                    Log.Info($"[bridge] #{id} <= smid={smid} (0x{smid:X4}) len={payload.Length} {Frame.HexDump(payload)}");
                     switch (smid)
                     {
                         case MessageIds.KeepAlive:
@@ -87,6 +89,29 @@ public sealed class LauncherBridge : IAsyncDisposable
                                 await ReplyAsync(stream, payload, ct);
                             }
                             break;
+                        case MessageIds.ChatBanQuery:
+                            // Echoing the empty request makes the client's ChatBanReply hit EOF, so it never
+                            // notifies and every chat message freezes the render thread for the full 10 s.
+                            // Answer "not banned": bool false, long expireAt 0, long delta 0 (longs little-endian).
+                            var ban = new byte[2 + 1 + 8 + 8];
+                            ban[0] = (byte)(MessageIds.ChatBanQuery >> 8);
+                            ban[1] = (byte)(MessageIds.ChatBanQuery & 0xFF);
+                            await ReplyAsync(stream, ban, ct);
+                            break;
+                        case MessageIds.ReconnectRequest:
+                            if (_autoConnect is { } reconnectTo)
+                            {
+                                bool sent = await PushReconnectAsync(client, reconnectTo.Host, reconnectTo.Port, reconnectTo.Name, ct);
+                                Log.Info($"[bridge] #{id} -> 回 {MessageIds.Reconnect} 重连 {reconnectTo.Host}:{reconnectTo.Port} ok={sent}");
+                            }
+                            else
+                            {
+                                Log.Warn($"[bridge] #{id} 收到重连请求，但没有进服目标");
+                            }
+                            break;
+                        case MessageIds.ConnectServer:
+                            Log.Info($"[bridge] #{id} 进服指令回执 {Frame.HexDump(payload)}");
+                            break;
                         default:
                             await ReplyAsync(stream, payload, ct);
                             break;
@@ -101,10 +126,28 @@ public sealed class LauncherBridge : IAsyncDisposable
     }
 
     /// <summary>Replies to a frame with the same message id and the original payload (currently an echo ack).</summary>
-    private static async Task ReplyAsync(Stream stream, byte[] payload, CancellationToken ct)
+    private async Task ReplyAsync(Stream stream, byte[] payload, CancellationToken ct)
     {
-        try { await Frame.WriteAsync(stream, payload, ct); }
+        try
+        {
+            await WriteAsync(stream, payload, ct);
+            int smid = Frame.MessageId(payload);
+            Log.Info($"[bridge] => smid={smid} (0x{smid:X4}) len={payload.Length} {Frame.HexDump(payload)}");
+        }
         catch (Exception ex) { Log.Warn("[bridge] 应答失败: " + ex.Message); }
+    }
+
+    private async Task WriteAsync(Stream stream, byte[] payload, CancellationToken ct)
+    {
+        await _writeGate.WaitAsync(ct);
+        try
+        {
+            await Frame.WriteAsync(stream, payload, ct);
+        }
+        finally
+        {
+            _writeGate.Release();
+        }
     }
 
     /// <summary>Pushes the join command once more after a short delay, covering the case where the first push
@@ -134,12 +177,34 @@ public sealed class LauncherBridge : IAsyncDisposable
             AppendString(body, host);
             AppendInt32(body, port);
             AppendString(body, name);
-            await Frame.WriteAsync(client.GetStream(), body.ToArray(), ct);
+            await WriteAsync(client.GetStream(), body.ToArray(), ct);
             return true;
         }
         catch (Exception ex)
         {
             Log.Warn("[bridge] 推送失败: " + ex.Message);
+            return false;
+        }
+    }
+
+    /// <summary>Answers a reconnect request with ReplyReconnect: string host, int port, string room, boolean.</summary>
+    public async Task<bool> PushReconnectAsync(TcpClient client, string host, int port, string room, CancellationToken ct)
+    {
+        try
+        {
+            var body = new List<byte>();
+            body.Add((byte)(MessageIds.Reconnect >> 8));
+            body.Add((byte)(MessageIds.Reconnect & 0xFF));
+            AppendString(body, host);
+            AppendInt32(body, port);
+            AppendString(body, room);
+            body.Add(1);
+            await WriteAsync(client.GetStream(), body.ToArray(), ct);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Warn("[bridge] 重连推送失败: " + ex.Message);
             return false;
         }
     }

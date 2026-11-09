@@ -1,0 +1,2 @@
+ed6650ee7feac7dd11fb7d489deea4515166d7ce4ccddfabe6e65fa070e6edda  180736  WtfNel.Payload.HwidSpoof.dll
+e0af741f5932510099ce92c2de8062afd04018cee3b9ee0f3dfae52f394f7b8a  310784  WtfNel.Payload.Proxy.dll

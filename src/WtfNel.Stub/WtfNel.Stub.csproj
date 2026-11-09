@@ -2,9 +2,18 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>WtfNel.Stub</RootNamespace>
-    
+
     <AssemblyName>WPFLauncher</AssemblyName>
     <DebugType>none</DebugType>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+
+    <Company>NetEase</Company>
+    <Product>我的世界启动器</Product>
+    <AssemblyTitle>我的世界启动器</AssemblyTitle>
+    <Description>我的世界启动器</Description>
+    <Copyright>Copyright © NetEase</Copyright>
+    <Version>1.15.34.21425</Version>
+    <FileVersion>1.15.34.21425</FileVersion>
+    <InformationalVersion>1.15.34.21425+0000000000000000000000000000000000000000</InformationalVersion>
   </PropertyGroup>
 </Project>

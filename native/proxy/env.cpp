@@ -17,6 +17,68 @@ void Dbg(const char* fmt, ...) {
     LogTo("[DBG] %s", buf);
 }
 
+static char   g_logDir[MAX_PATH] = {};
+static int    g_logDay = 0;
+static HANDLE g_logFile = INVALID_HANDLE_VALUE;
+
+static void CreateDirRecursive(const char* path) {
+    char tmp[MAX_PATH];
+    lstrcpynA(tmp, path, MAX_PATH);
+    for (char* p = tmp + 3; *p; ++p) {
+        if (*p != '\\') continue;
+        *p = 0;
+        CreateDirectoryA(tmp, NULL);
+        *p = '\\';
+    }
+    CreateDirectoryA(tmp, NULL);
+}
+
+static void ResolveLogDir() {
+    if (g_logDir[0]) return;
+
+    const char* dir = getenv("WTFNEL_LOG_DIR");
+    if (dir && *dir) {
+        lstrcpynA(g_logDir, dir, MAX_PATH);
+    } else {
+        char tmp[MAX_PATH];
+        DWORD n = GetTempPathA(MAX_PATH, tmp);
+        if (n > 0 && n + 14 < MAX_PATH) lstrcatA(tmp, "WtfNel\\logs");
+        else lstrcpynA(tmp, "C:\\WtfNel\\logs", MAX_PATH);
+        lstrcpynA(g_logDir, tmp, MAX_PATH);
+    }
+
+    CreateDirRecursive(g_logDir);
+}
+
+const char* ProxyLogPath() {
+    static char path[MAX_PATH];
+    ResolveLogDir();
+
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    wsprintfA(path, "%s\\proxy-%04d%02d%02d.log", g_logDir, st.wYear, st.wMonth, st.wDay);
+    return path;
+}
+
+static HANDLE CurrentLogFile() {
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    int day = st.wYear * 10000 + st.wMonth * 100 + st.wDay;
+
+    if (g_logFile != INVALID_HANDLE_VALUE && day == g_logDay) return g_logFile;
+
+    if (g_logFile != INVALID_HANDLE_VALUE) {
+        CloseHandle(g_logFile);
+        g_logFile = INVALID_HANDLE_VALUE;
+    }
+
+    g_logDay = day;
+    g_logFile = CreateFileA(ProxyLogPath(), FILE_APPEND_DATA,
+                            FILE_SHARE_READ | FILE_SHARE_WRITE,
+                            NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    return g_logFile;
+}
+
 void LogTo(const char* fmt, ...) {
 
     static CRITICAL_SECTION cs;
@@ -27,48 +89,17 @@ void LogTo(const char* fmt, ...) {
     }
     EnterCriticalSection(&cs);
 
-    static HANDLE h = INVALID_HANDLE_VALUE;
-    static bool   tried = false;
-    if (!tried) {
-        tried = true;
-
-        auto tryOpen = [](const char* path) -> HANDLE {
-            if (!path || !*path) return INVALID_HANDLE_VALUE;
-            return CreateFileA(path, FILE_APPEND_DATA,
-                               FILE_SHARE_READ | FILE_SHARE_WRITE,
-                               NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-        };
-        char buf[MAX_PATH];
-
-        if (h == INVALID_HANDLE_VALUE) {
-            const char* appdata = getenv("APPDATA");
-            if (appdata && strlen(appdata) + 32 < MAX_PATH) {
-                lstrcpynA(buf, appdata, MAX_PATH);
-                lstrcatA(buf, "\\.minecraft\\proxy.log");
-                h = tryOpen(buf);
-            }
-        }
-
-        if (h == INVALID_HANDLE_VALUE) {
-            char tmp[MAX_PATH];
-            DWORD n = GetTempPathA(MAX_PATH, tmp);
-            if (n > 0 && n < MAX_PATH - 24) {
-                lstrcatA(tmp, "heypixel.log");
-                h = tryOpen(tmp);
-            }
-        }
-
-        if (h == INVALID_HANDLE_VALUE) {
-            h = tryOpen("C:\\heypixel.log");
-        }
-    }
-
+    HANDLE h = CurrentLogFile();
     if (h != INVALID_HANDLE_VALUE) {
+        SYSTEMTIME st;
+        GetLocalTime(&st);
+
         char msg[1200];
+        int base = wsprintfA(msg, "[%04d-%02d-%02d %02d:%02d:%02d.%03d] ",
+                             st.wYear, st.wMonth, st.wDay,
+                             st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
         va_list ap;
         va_start(ap, fmt);
-        int base = snprintf(msg, sizeof(msg),
-                            "[%08lu] ", (unsigned long)GetTickCount());
         vsnprintf(msg + base, sizeof(msg) - base - 2, fmt, ap);
         va_end(ap);
         size_t len = strlen(msg);

@@ -24,6 +24,18 @@ public sealed class ShadowConfig
     /// <summary>Launcher process name, used to reuse a running instance.</summary>
     public string LauncherProcessName { get; set; } = "WPFLauncher";
 
+    /// <summary>Launcher build written into the placeholder's version resource; refreshed from the x19 patch list on every launch.</summary>
+    public string LauncherFileVersion { get; set; } = "";
+
+    /// <summary>-Dminecraft.launcher.brand, the official client reports "netease".</summary>
+    public string LauncherBrand { get; set; } = "netease";
+
+    /// <summary>filterpath of --userProperties; empty means %LOCALAPPDATA%\Netease\MCLauncher\config\fltmp.</summary>
+    public string FilterPath { get; set; } = "";
+
+    /// <summary>Rewrite the placeholder's version resource and the filter path, and point the MCLauncher key at it before launching.</summary>
+    public bool WriteLauncherRegistry { get; set; } = true;
+
     /// <summary>Whether to create the client process under the launcher process as its parent.</summary>
     public bool UseParentProcess { get; set; } = true;
 
